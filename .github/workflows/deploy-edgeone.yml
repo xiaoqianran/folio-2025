@@ -1,0 +1,41 @@
+name: Deploy to EdgeOne
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: edgeone-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --force
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_COMPRESSED: "1"
+          VITE_MUSIC: "1"
+          VITE_LOG: "0"
+          VITE_SERVER_URL: ""
+          VITE_ANALYTICS_TAG: ""
+          VITE_GAME_PUBLIC: ""
+
+      - name: Deploy to EdgeOne Makers
+        run: npx --yes edgeone@latest makers deploy ./dist -n folio-2025 -t "$EDGEONE_API_TOKEN" -e production
+        env:
+          EDGEONE_API_TOKEN: ${{ secrets.EDGEONE_API_TOKEN }}
